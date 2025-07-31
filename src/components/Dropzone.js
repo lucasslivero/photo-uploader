@@ -1,6 +1,7 @@
 import React, { use, useState } from "react";
 import { Poppins } from "next/font/google";
 import { useDropzone } from "react-dropzone";
+import Modal from "./Modal";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -11,6 +12,7 @@ const poppins = Poppins({
 export default function Dropzone() {
   const [files, setFiles] = useState([]);
   const [statusMsg, setStatusMsg] = useState("");
+  const [openModal, setOpenModal] = useState(null);
 
   const { acceptedFiles, getRootProps, getInputProps } = useDropzone({
     accept: { "image/*": [] },
@@ -60,19 +62,35 @@ export default function Dropzone() {
 
   const fileItems = files.map((file, index) => (
     <li
-      key={index}
+      key={file.path}
       className="p-3 bg-zinc-900/50 rounded-lg border border-zinc-800 text-white"
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium truncate">{file.path}</span>
-        <button
-          className="ml-4 bg-red-600 hover:bg-red-800 cursor-pointer rounded-md px-2 py-1 text-xs"
-          onClick={() => handleDeleteImage(index)}
-        >
-          DELETE
-        </button>
+        <span className="text-sm font-medium truncate flex-1">{file.path}</span>
+        <div className="flex flex-shrink-0 ml-4 space-x-2">
+          <button
+            className="bg-blue-600 hover:bg-blue-800 cursor-pointer rounded-md px-2 py-1 text-xs"
+            onClick={() => setOpenModal(index)}
+          >
+            Open Modal
+          </button>
+          <button
+            className="bg-red-600 hover:bg-red-800 cursor-pointer rounded-md px-2 py-1 text-xs"
+            onClick={() => handleDeleteImage(index)}
+          >
+            DELETE
+          </button>
+        </div>
       </div>
       <div className="text-xs text-zinc-400">{formatFileSize(file.size)}</div>
+      {openModal === index && (
+        <Modal
+          open={true}
+          onClose={() => setOpenModal(null)}
+          file={file}
+          preview={URL.createObjectURL(file)}
+        />
+      )}
     </li>
   ));
 
