@@ -1,13 +1,6 @@
 import React, { use, useState } from "react";
-import { Poppins } from "next/font/google";
 import { useDropzone } from "react-dropzone";
 import Modal from "./Modal";
-
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
 
 export default function Dropzone() {
   const [files, setFiles] = useState([]);
@@ -96,7 +89,7 @@ export default function Dropzone() {
 
   return (
     <div
-      className={`flex flex-col items-center justify-center min-h-[300px] ${poppins.className}`}
+      className={`flex flex-col items-center justify-center min-h-[300px]`}
     >
       <section className="w-full max-w-md mb-6">
         <div
