@@ -7,10 +7,20 @@ export default function Dropzone() {
   const [statusMsg, setStatusMsg] = useState("");
   const [openModal, setOpenModal] = useState(null);
 
+  const FILE_STATUS = {
+    PENDING: "Pending upload",
+    SUCCESS: "Successful upload",
+    ERROR: "Error uploading",
+  };
+
   const { acceptedFiles, getRootProps, getInputProps } = useDropzone({
     accept: { "image/*": [] },
     onDrop: (acceptedFiles) => {
-      setFiles((prevFiles) => [...prevFiles, ...acceptedFiles]);
+      const newFiles = acceptedFiles.map((file) => ({
+        file,
+        status: FILE_STATUS.PENDING,
+      }));
+      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
     },
   });
 
@@ -31,35 +41,57 @@ export default function Dropzone() {
 
   const handleUploadImage = async () => {
     setStatusMsg("Sending...");
+
+    const filesToUpload = files.filter(f => f.status !== FILE_STATUS.SUCCESS);
+
+     if (filesToUpload.length === 0) {
+      setStatusMsg("All images successfully uploaded");
+      return;
+    }
+
     try {
-      for (const file of files) {
+      const updatedFiles = [...files];
+
+      for (let i = 0; i < updatedFiles.length; i++) {
+        if (updatedFiles[i].status === FILE_STATUS.SUCCESS) continue;
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", updatedFiles[i].file);
 
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         });
 
-        if (!res.ok) {
-          throw new Error("Upload error");
+        if (res.ok) {
+          updatedFiles[i].status = FILE_STATUS.SUCCESS;
+        } else {
+          updatedFiles[i].status = FILE_STATUS.ERROR;
         }
       }
 
-      setStatusMsg("Uploaded successfully ✅");
-      setFiles([]);
+      setFiles([...updatedFiles]);
+
+      const remainingFiles = updatedFiles.filter(f => f.status === FILE_STATUS.PENDING || FILE_STATUS.ERROR)
+      if(remainingFiles.length === 0 ) {
+        setStatusMsg("All images successfully uploaded");
+      }else {
+        setStatusMsg(`${filesToUpload.length - remainingFiles.length} images sended. ${remainingFiles.length} remaining`);
+      }
     } catch (error) {
       setStatusMsg("Unsuccessful upload ❌");
     }
   };
 
-  const fileItems = files.map((file, index) => (
+  const fileItems = files.map((f, index) => (
     <li
-      key={file.path}
+      key={index}
       className="p-3 bg-zinc-900/50 rounded-lg border border-zinc-800 text-white"
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium truncate flex-1">{file.path}</span>
+        <span className="text-sm font-medium truncate flex-1">
+          {f.file.path}
+        </span>
+        <span className="text-sm font-medium truncate flex-1">{f.status}</span>
         <div className="flex flex-shrink-0 ml-4 space-x-2">
           <button
             className="bg-blue-600 hover:bg-blue-800 cursor-pointer rounded-md px-2 py-1 text-xs"
@@ -75,7 +107,7 @@ export default function Dropzone() {
           </button>
         </div>
       </div>
-      <div className="text-xs text-zinc-400">{formatFileSize(file.size)}</div>
+      <div className="text-xs text-zinc-400">{formatFileSize(f.file.size)}</div>
       {openModal === index && (
         <Modal
           open={true}
@@ -88,9 +120,7 @@ export default function Dropzone() {
   ));
 
   return (
-    <div
-      className={`flex flex-col items-center justify-center min-h-[300px]`}
-    >
+    <div className={`flex flex-col items-center justify-center min-h-[300px]`}>
       <section className="w-full max-w-md mb-6">
         <div
           {...getRootProps({
