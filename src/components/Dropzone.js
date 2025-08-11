@@ -1,4 +1,5 @@
-import React, { use, useState } from "react";
+import { TrashIcon } from "lucide-react";
+import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import Modal from "./Modal";
 
@@ -100,10 +101,10 @@ export default function Dropzone() {
             Open Modal
           </button>
           <button
-            className="bg-red-600 hover:bg-red-800 cursor-pointer rounded-md px-2 py-1 text-xs"
+            className="text-red-600 hover:text-red-800 cursor-pointer rounded-md px-2 py-1 text-xs"
             onClick={() => handleDeleteImage(index)}
           >
-            DELETE
+            <TrashIcon />
           </button>
         </div>
       </div>
@@ -112,8 +113,8 @@ export default function Dropzone() {
         <Modal
           open={true}
           onClose={() => setOpenModal(null)}
-          file={file}
-          preview={URL.createObjectURL(file)}
+          file={f.file}
+          preview={URL.createObjectURL(f.file)}
         />
       )}
     </li>
@@ -130,7 +131,7 @@ export default function Dropzone() {
         >
           <input {...getInputProps()} />
           <p className="text-zinc-300 font-medium text-center">
-            Drag 'n' drop some files here, or click to select files
+            Drag n drop some files here, or click to select files
           </p>
         </div>
       </section>

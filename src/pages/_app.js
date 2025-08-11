@@ -1,5 +1,6 @@
 import "@/styles/globals.css";
 import { Poppins } from "next/font/google";
+import Header from "./Header";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -10,7 +11,8 @@ const poppins = Poppins({
 export default function App({ Component, pageProps }) {
   return (
     <div className={poppins.className}>
-      <Component {...pageProps} />;
+      <Header />
+      <Component {...pageProps} />
     </div>
   );
 }
