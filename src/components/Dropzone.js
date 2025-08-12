@@ -1,4 +1,4 @@
-import { TrashIcon } from "lucide-react";
+import { Trash } from "lucide-react";
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import Modal from "./Modal";
@@ -104,7 +104,7 @@ export default function Dropzone() {
             className="text-red-600 hover:text-red-800 cursor-pointer rounded-md px-2 py-1 text-xs"
             onClick={() => handleDeleteImage(index)}
           >
-            <TrashIcon />
+            <Trash />
           </button>
         </div>
       </div>
