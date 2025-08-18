@@ -2,6 +2,9 @@ import { Trash } from "lucide-react";
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import Modal from "./Modal";
+import { ToastContainer, toast } from "react-toastify";
+import { v4  as uuidv4} from "uuid"
+import { uploadFile, uploadToS3 } from "@/service/uploadService";
 
 export default function Dropzone() {
   const [files, setFiles] = useState([]);
@@ -17,10 +20,15 @@ export default function Dropzone() {
   const { acceptedFiles, getRootProps, getInputProps } = useDropzone({
     accept: { "image/*": [] },
     onDrop: (acceptedFiles) => {
-      const newFiles = acceptedFiles.map((file) => ({
-        file,
-        status: FILE_STATUS.PENDING,
-      }));
+      const newFiles = [];
+      acceptedFiles.forEach((file) => {
+        const exists = files.some((f) => f.file.name === file.name);
+        if (exists) {
+          toast.warning(`The image ${file.name} has already been added!`);
+        } else {
+          newFiles.push({ file, status: FILE_STATUS.PENDING });
+        }
+      });
       setFiles((prevFiles) => [...prevFiles, ...newFiles]);
     },
   });
@@ -32,52 +40,38 @@ export default function Dropzone() {
   }
 
   const handleDeleteImage = async (index) => {
-    const res = await fetch(`/api/upload/${index}`, {
-      method: "DELETE",
-    });
-    if (res.ok) {
-      setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
-    }
+    setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
 
   const handleUploadImage = async () => {
     setStatusMsg("Sending...");
 
-    const filesToUpload = files.filter(f => f.status !== FILE_STATUS.SUCCESS);
+    const filesToUpload = files.filter((f) => f.status !== FILE_STATUS.SUCCESS);
 
-     if (filesToUpload.length === 0) {
+    if (filesToUpload.length === 0) {
       setStatusMsg("All images successfully uploaded");
       return;
     }
-
     try {
       const updatedFiles = [...files];
 
       for (let i = 0; i < updatedFiles.length; i++) {
-        if (updatedFiles[i].status === FILE_STATUS.SUCCESS) continue;
-        const formData = new FormData();
-        formData.append("file", updatedFiles[i].file);
-
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (res.ok) {
-          updatedFiles[i].status = FILE_STATUS.SUCCESS;
-        } else {
-          updatedFiles[i].status = FILE_STATUS.ERROR;
+        const fileObj = updatedFiles[i];
+        if (fileObj.status === FILE_STATUS.SUCCESS) continue;
+        
+        try {
+          await uploadFile(fileObj.file)
+          fileObj.status = FILE_STATUS.SUCCESS;
+        } catch (err) {
+          console.error("Upload error:", err);
+          fileObj.status = FILE_STATUS.ERROR;
         }
+        setFiles([...updatedFiles]);
       }
+      const totalSent = updatedFiles.filter(f => f.status === FILE_STATUS.SUCCESS).length;
+      const totalRemaining = updatedFiles.filter(f => f.status !== FILE_STATUS.SUCCESS).length;
+      setStatusMsg(`${totalSent} images sent, ${totalRemaining} remaining`);
 
-      setFiles([...updatedFiles]);
-
-      const remainingFiles = updatedFiles.filter(f => f.status === FILE_STATUS.PENDING || FILE_STATUS.ERROR)
-      if(remainingFiles.length === 0 ) {
-        setStatusMsg("All images successfully uploaded");
-      }else {
-        setStatusMsg(`${filesToUpload.length - remainingFiles.length} images sended. ${remainingFiles.length} remaining`);
-      }
     } catch (error) {
       setStatusMsg("Unsuccessful upload ❌");
     }
@@ -104,7 +98,7 @@ export default function Dropzone() {
             className="text-red-600 hover:text-red-800 cursor-pointer rounded-md px-2 py-1 text-xs"
             onClick={() => handleDeleteImage(index)}
           >
-            <Trash />
+            {f.status !== FILE_STATUS.SUCCESS && <Trash />}
           </button>
         </div>
       </div>
@@ -152,6 +146,7 @@ export default function Dropzone() {
         Upload images
       </button>
       <p>{statusMsg}</p>
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 }
