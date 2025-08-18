@@ -1,30 +1,20 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const { MONGO_USER, MONGO_PASS, MONGO_HOST, MONGO_DB } = process.env;
+const uri = process.env.MONGODB_URI || '';
+const dbName = process.env.MONGODB_DB_NAME || '';
 
-if (!MONGO_USER || !MONGO_PASS || !MONGO_HOST || !MONGO_DB) {
-  throw new Error("Please define all required Mongo env variables");
-}
-
-const MONGODB_URI = `mongodb://${MONGO_USER}:${MONGO_PASS}@${MONGO_HOST}:27017/${MONGO_DB}`;
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
-}
-
-async function dbConnect() {
-  if (cached.conn) {
-    return cached.conn;
+export default async function connect() {
+  let conn;
+  if (!conn) {
+    try {
+      conn = await mongoose.connect(uri, {
+        dbName,
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 2000,
+      });
+    } catch (error) {
+      console.error(`Error to connect into database: ${error}`);
+    }
   }
-
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => {
-      return mongoose;
-    });
-  }
-  cached.conn = await cached.promise;
-  return cached.conn;
+  return conn;
 }
-
-export default dbConnect;
